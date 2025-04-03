@@ -1,6 +1,6 @@
 {
   "name": "schwrc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A CLI tool for working with files",
   "main": "dist/index.js",
   "bin": {
@@ -13,7 +13,8 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn build",
+    "postinstall": "yarn build"
   },
   "files": [
     "dist",
