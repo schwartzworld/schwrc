@@ -85,9 +85,9 @@ schwrc -l "(args) => args.length" hello world
 # Output: 2
 ```
 
-4. Read a file (using fs module):
+4. Read a file (using Node.js built-in modules):
 ```bash
-schwrc -l "async (args) => { const content = await fs.promises.readFile(args[0], 'utf-8'); return content; }" file.txt
+schwrc -l "async (args) => { const fs = require('fs'); const content = await fs.promises.readFile(args[0], 'utf-8'); return content; }" file.txt
 ```
 
 ### Suppressing Yarn Output
@@ -102,7 +102,7 @@ schwrc --no-yarn -l "(args) => args.join(' ')" hello world
 
 1. **Alias Creation**: The tool reads your shell history to get the last command and creates an alias in your `.zshrc` file.
 
-2. **Lambda Functions**: The tool generates a Node.js command that executes your lambda function with the provided arguments. The generated command can be aliased for future use. The `fs` module is available globally in lambda functions.
+2. **Lambda Functions**: The tool generates a Node.js command that executes your lambda function with the provided arguments. The generated command can be aliased for future use. Node.js built-in modules (like `fs`, `path`, etc.) can be accessed using `require()`.
 
 3. **Interactive Mode**: When no arguments are provided for interactive options (like `-a` or `-l`), the tool will prompt you for input.
 

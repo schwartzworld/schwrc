@@ -29,9 +29,7 @@ class FunctionExecutor {
       new Function('args', `return (${func})(args)`);
       
       // If we get here, the syntax is valid
-      const script = `const fs = require('fs');
-global.fs = fs;
-(async () => {
+      const script = `(async () => {
   try {
     const result = await (${func})(process.argv.slice(2));
     console.log(result);

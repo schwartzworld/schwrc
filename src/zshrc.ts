@@ -119,6 +119,7 @@ class ZSHRCManager {
     const content = this.rawZshrc;
     const lines = content.split('\n');
     let isInFunction = false;
+    let isInQuotes = false;
     let found = false;
 
     const newLines = lines.filter((line, i) => {
@@ -137,9 +138,24 @@ class ZSHRCManager {
         return false;
       }
 
+      // Handle multi-line quotes
+      if (isInQuotes) {
+        // Count quotes in this line (not escaped)
+        const quoteCount = (trimmedLine.match(/(?<!\\)"/g) || []).length;
+        if (quoteCount % 2 === 1) {
+          isInQuotes = false;
+        }
+        return false;
+      }
+
       // Check for alias definition
       if (trimmedLine.match(new RegExp(`^alias\\s+${name}=`))) {
         found = true;
+        // Count quotes in this line (not escaped)
+        const quoteCount = (trimmedLine.match(/(?<!\\)"/g) || []).length;
+        if (quoteCount % 2 === 1) {
+          isInQuotes = true;
+        }
         return false;
       }
 
