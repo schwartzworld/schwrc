@@ -1,27 +1,58 @@
-import * as readline from 'readline';
+import * as readline from 'node:readline/promises';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { exec, spawn } from 'child_process';
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 export async function promptForAlias() {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
     });
-    return new Promise((resolve) => {
-        rl.question('Enter an alias name: ', (answer) => {
-            rl.close();
-            resolve(answer.trim());
-        });
-    });
+    const answer = await rl.question('Enter an alias name: ');
+    rl.close();
+    return answer.trim();
 }
 export async function promptForFunction() {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-    return new Promise((resolve) => {
-        rl.question('Enter a JavaScript lambda function: ', (answer) => {
-            rl.close();
-            resolve(answer.trim());
+    // Create a temporary file
+    const tempFile = path.join(os.tmpdir(), `function_${Date.now()}.js`);
+    fs.writeFileSync(tempFile, ''); // Start with empty file
+    // Get the default editor from environment or use nano as fallback
+    const editor = process.env.EDITOR || 'nano';
+    try {
+        // Open the editor and wait for it to complete
+        await new Promise((resolve, reject) => {
+            const child = spawn(editor, [tempFile], {
+                stdio: 'inherit',
+                shell: true
+            });
+            child.on('error', (error) => {
+                reject(error);
+            });
+            child.on('exit', (code) => {
+                if (code === 0) {
+                    resolve();
+                }
+                else {
+                    reject(new Error(`Editor exited with code ${code}`));
+                }
+            });
         });
-    });
+        // Read the file content
+        const content = fs.readFileSync(tempFile, 'utf8');
+        // Clean up the temporary file
+        fs.unlinkSync(tempFile);
+        // Just trim the content, no need to filter comments anymore
+        return content.trim();
+    }
+    catch (error) {
+        // Clean up the temporary file in case of error
+        if (fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile);
+        }
+        throw error;
+    }
 }
 export async function promptForEntryToDelete(entries) {
     if (entries.length === 0) {
@@ -37,15 +68,11 @@ export async function promptForEntryToDelete(entries) {
         input: process.stdin,
         output: process.stdout
     });
-    return new Promise((resolve) => {
-        rl.question('\nEnter the number of the entry to delete (or press Enter to cancel): ', (answer) => {
-            rl.close();
-            const num = parseInt(answer.trim());
-            if (isNaN(num) || num < 1 || num > entries.length) {
-                resolve(null);
-                return;
-            }
-            resolve(entries[num - 1].name);
-        });
-    });
+    const answer = await rl.question('\nEnter the number of the entry to delete (or press Enter to cancel): ');
+    rl.close();
+    const num = parseInt(answer.trim());
+    if (isNaN(num) || num < 1 || num > entries.length) {
+        return null;
+    }
+    return entries[num - 1].name;
 }

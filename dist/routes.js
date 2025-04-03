@@ -46,11 +46,20 @@ export const lambdaPath = async (options) => {
     }
     // Get all arguments after the -l flag
     const lambdaArgs = process.argv.slice(process.argv.indexOf('-l') + 1);
-    const command = generateShellCommand(func, lambdaArgs);
-    process.stdout.write(command + '\n');
-    // Prompt for an alias
-    const alias = await promptForAlias();
-    if (alias) {
-        ZSHRC.updateZshrc(alias, command);
+    try {
+        // First validate the function by generating the command
+        const command = generateShellCommand(func, lambdaArgs);
+        // If we get here, the function is valid
+        // Now prompt for alias before showing the command
+        const alias = await promptForAlias();
+        if (alias) {
+            ZSHRC.updateZshrc(alias, command);
+        }
+        // Finally show the command
+        process.stdout.write(command + '\n');
+    }
+    catch (error) {
+        console.error('Error:', error.message);
+        process.exit(1);
     }
 };

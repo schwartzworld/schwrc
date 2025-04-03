@@ -24,8 +24,8 @@ export function executeFunction(funcStr: string, args: string[]): void {
 
 export function generateShellCommand(func: string, args: string[] = []): string {
   try {
-    // Validate the function syntax by creating a new Script
-    new Script(`(${func})([])`);
+    // Only validate basic syntax, not runtime dependencies
+    new Function('args', `return (${func})(args)`);
     
     // If we get here, the syntax is valid
     const script = `const fs = require('fs');
@@ -47,10 +47,8 @@ global.fs = fs;
     return `node -e '${escapedScript}' ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(' ')}`;
   } catch (error: unknown) {
     if (error instanceof Error) {
-      console.error('Invalid JavaScript syntax:', error.message);
-    } else {
-      console.error('Invalid JavaScript syntax: Unknown error');
+      throw new Error(`Invalid JavaScript syntax: ${error.message}`);
     }
-    process.exit(1);
+    throw error;
   }
 } 

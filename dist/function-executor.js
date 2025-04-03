@@ -1,4 +1,3 @@
-import { Script } from 'vm';
 export function executeFunction(funcStr, args) {
     try {
         // Create a new Function from the string
@@ -19,8 +18,8 @@ export function executeFunction(funcStr, args) {
 }
 export function generateShellCommand(func, args = []) {
     try {
-        // Validate the function syntax by creating a new Script
-        new Script(`(${func})([])`);
+        // Only validate basic syntax, not runtime dependencies
+        new Function('args', `return (${func})(args)`);
         // If we get here, the syntax is valid
         const script = `const fs = require('fs');
 global.fs = fs;
@@ -40,11 +39,8 @@ global.fs = fs;
     }
     catch (error) {
         if (error instanceof Error) {
-            console.error('Invalid JavaScript syntax:', error.message);
+            throw new Error(`Invalid JavaScript syntax: ${error.message}`);
         }
-        else {
-            console.error('Invalid JavaScript syntax: Unknown error');
-        }
-        process.exit(1);
+        throw error;
     }
 }
