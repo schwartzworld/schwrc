@@ -1,10 +1,10 @@
 import { HistoryManager } from './history.js';
 import { ZSHRC } from './zshrc.js';
-import { promptForAlias, promptForFunction, promptForEntryToDelete } from './prompts.js';
-import { generateShellCommand } from './function-executor.js';
+import { promptManager } from './prompts.js';
+import { functionExecutor } from './function-executor.js';
 export const aliasPath = async (options) => {
     const lastCommand = HistoryManager.lastCommand;
-    const alias = typeof options.alias === 'string' ? options.alias : await promptForAlias();
+    const alias = typeof options.alias === 'string' ? options.alias : await promptManager.promptForAlias();
     if (!alias) {
         console.log('No alias provided. Exiting...');
         process.exit(0);
@@ -19,7 +19,7 @@ export const deletePath = async (options) => {
     else {
         // Interactive deletion
         const entries = ZSHRC.listEntries();
-        const nameToDelete = await promptForEntryToDelete(entries);
+        const nameToDelete = await promptManager.promptForEntryToDelete(entries);
         if (nameToDelete) {
             ZSHRC.deleteFromZshrc(nameToDelete);
         }
@@ -27,39 +27,34 @@ export const deletePath = async (options) => {
 };
 export const lambdaPath = async (options) => {
     let func;
+    const lambdaArgs = options.input ? options.input.split(' ') : [];
     if (typeof options.lambda === 'string') {
-        // Function was provided as an argument
+        // Non-interactive mode with function provided
         func = options.lambda;
     }
     else if (process.stdin.isTTY) {
         // Interactive mode
-        func = await promptForFunction();
+        func = await promptManager.promptForFunction();
     }
     else {
         // Non-interactive mode but no function provided
-        console.error('Error: Function argument required when piping output');
+        console.error('Error: No function provided in non-interactive mode');
         process.exit(1);
+        return; // TypeScript needs this
     }
-    if (!func) {
-        console.log('No function provided. Exiting...');
-        process.exit(0);
-    }
-    // Get all arguments after the -l flag
-    const lambdaArgs = process.argv.slice(process.argv.indexOf('-l') + 1);
     try {
         // First validate the function by generating the command
-        const command = generateShellCommand(func, lambdaArgs);
+        const command = functionExecutor.generateShellCommand(func, lambdaArgs);
         // If we get here, the function is valid
         // Now prompt for alias before showing the command
-        const alias = await promptForAlias();
+        const alias = await promptManager.promptForAlias();
         if (alias) {
             ZSHRC.updateZshrc(alias, command);
         }
-        // Finally show the command
-        process.stdout.write(command + '\n');
+        console.log('Function validated and alias created successfully!');
     }
     catch (error) {
-        console.error('Error:', error.message);
+        console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
         process.exit(1);
     }
 };

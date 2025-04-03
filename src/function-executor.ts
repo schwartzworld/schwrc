@@ -1,34 +1,35 @@
 import { readFileSync } from 'fs';
 import { Script } from 'vm';
 
-export function executeFunction(funcStr: string, args: string[]): void {
-  try {
-    // Create a new Function from the string
-    const func = new Function('args', `return (${funcStr})(args)`);
-    
-    // Execute the function with the arguments
-    const result = func(args);
-    
-    // If the result is not undefined, log it
-    if (result !== undefined) {
-      console.log(result);
+class FunctionExecutor {
+  executeFunction(funcStr: string, args: string[]): void {
+    try {
+      // Create a new Function from the string
+      const func = new Function('args', `return (${funcStr})(args)`);
+      
+      // Execute the function with the arguments
+      const result = func(args);
+      
+      // If the result is not undefined, log it
+      if (result !== undefined) {
+        console.log(result);
+      }
+      
+      // Exit the process
+      process.exit(0);
+    } catch (error) {
+      console.error('Error executing function:', error);
+      process.exit(1);
     }
-    
-    // Exit the process
-    process.exit(0);
-  } catch (error) {
-    console.error('Error executing function:', error);
-    process.exit(1);
   }
-}
 
-export function generateShellCommand(func: string, args: string[] = []): string {
-  try {
-    // Only validate basic syntax, not runtime dependencies
-    new Function('args', `return (${func})(args)`);
-    
-    // If we get here, the syntax is valid
-    const script = `const fs = require('fs');
+  generateShellCommand(func: string, args: string[] = []): string {
+    try {
+      // Only validate basic syntax, not runtime dependencies
+      new Function('args', `return (${func})(args)`);
+      
+      // If we get here, the syntax is valid
+      const script = `const fs = require('fs');
 global.fs = fs;
 (async () => {
   try {
@@ -39,16 +40,19 @@ global.fs = fs;
     process.exit(1);
   }
 })();`;
-    
-    // Escape single quotes in the script for shell
-    const escapedScript = script.replace(/'/g, "'\\''");
-    
-    // Return the complete command with node -e
-    return `node -e '${escapedScript}' ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(' ')}`;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw new Error(`Invalid JavaScript syntax: ${error.message}`);
+      
+      // Escape single quotes in the script for shell
+      const escapedScript = script.replace(/'/g, "'\\''");
+      
+      // Return the complete command with node -e
+      return `node -e '${escapedScript}' ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(' ')}`;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(`Invalid JavaScript syntax: ${error.message}`);
+      }
+      throw error;
     }
-    throw error;
   }
-} 
+}
+
+export const functionExecutor = new FunctionExecutor(); 
