@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { getLastCommand } from './history.js';
-import { updateZshrc, listZshrcEntries, deleteFromZshrc } from './zshrc.js';
+import { HistoryManager } from './history.js';
+import { ZSHRC } from './zshrc.js';
 import { promptForAlias, promptForFunction, promptForEntryToDelete } from './prompts.js';
 import { generateShellCommand } from './function-executor.js';
 
@@ -27,23 +27,23 @@ program
   .argument('[args...]', 'arguments to pass to the function')
   .action(async (args: string[], options: Options) => {
     if (options.alias !== undefined) {
-      const lastCommand = getLastCommand();
+      const lastCommand = HistoryManager.lastCommand;
       const alias = typeof options.alias === 'string' ? options.alias : await promptForAlias();
       if (!alias) {
         console.log('No alias provided. Exiting...');
         process.exit(0);
       }
-      updateZshrc(alias, lastCommand);
+      ZSHRC.updateZshrc(alias, lastCommand);
     } else if (options.delete !== undefined) {
       if (typeof options.delete === 'string') {
         // Delete specific entry
-        deleteFromZshrc(options.delete);
+        ZSHRC.deleteFromZshrc(options.delete);
       } else {
         // Interactive deletion
-        const entries = listZshrcEntries();
+        const entries = ZSHRC.listEntries();
         const nameToDelete = await promptForEntryToDelete(entries);
         if (nameToDelete) {
-          deleteFromZshrc(nameToDelete);
+          ZSHRC.deleteFromZshrc(nameToDelete);
         }
       }
     } else if (options.lambda !== undefined) {
@@ -74,7 +74,7 @@ program
       // Prompt for an alias
       const alias = await promptForAlias();
       if (alias) {
-        updateZshrc(alias, command);
+        ZSHRC.updateZshrc(alias, command);
       }
     }
   });
